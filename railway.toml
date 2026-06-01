@@ -1,9 +1,12 @@
 [build]
 builder = "NIXPACKS"
 
+[variables]
+NIXPACKS_NODE_VERSION = "20"
+
 [deploy]
 startCommand = "node dist/main.js"
-healthcheckPath = "/api/dashboard"
+healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 
