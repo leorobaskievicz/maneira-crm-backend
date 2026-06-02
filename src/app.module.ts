@@ -17,6 +17,7 @@ import { StockMovementsModule } from './stock-movements/stock-movements.module';
 import { LeadsModule } from './leads/leads.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { HealthModule } from './health/health.module';
     LeadsModule,
     DashboardModule,
     HealthModule,
+    CampaignsModule,
   ],
 })
 export class AppModule {}
