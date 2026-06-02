@@ -1,11 +1,32 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Board } from './board.entity';
+import { BoardColumn } from '../board-columns/board-column.entity';
 
 @Injectable()
-export class BoardsService {
-  constructor(@InjectRepository(Board) private repo: Repository<Board>) {}
+export class BoardsService implements OnModuleInit {
+  constructor(
+    @InjectRepository(Board) private repo: Repository<Board>,
+  ) {}
+
+  async onModuleInit() {
+    const existing = await this.repo.findOne({ where: { name: 'Leads' } });
+    if (!existing) {
+      const board = this.repo.create({
+        name: 'Leads',
+        description: 'Funil de captação de clientes',
+        columns: [
+          { name: 'Novo', color: '#1976D2', order: 0 },
+          { name: 'Contatado', color: '#F57C00', order: 1 },
+          { name: 'Agendado', color: '#7B1FA2', order: 2 },
+          { name: 'Convertido', color: '#388E3C', order: 3 },
+          { name: 'Perdido', color: '#9E9E9E', order: 4 },
+        ],
+      });
+      await this.repo.save(board);
+    }
+  }
   
   findAll() { return this.repo.find({ order: { createdAt: 'ASC' } }); }
   
@@ -16,7 +37,6 @@ export class BoardsService {
     });
     if (!board) throw new NotFoundException('Board não encontrado');
     
-    // Ordenar colunas e cards
     board.columns.sort((a, b) => a.order - b.order);
     board.columns.forEach(c => {
       if (c.cards) c.cards.sort((a, b) => a.order - b.order);
