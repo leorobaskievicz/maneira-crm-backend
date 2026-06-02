@@ -18,6 +18,9 @@ import { LeadsModule } from './leads/leads.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
+import { BoardsModule } from './boards/boards.module';
+import { BoardColumnsModule } from './board-columns/board-columns.module';
+import { CardsModule } from './cards/cards.module';
 
 @Module({
   imports: [
@@ -55,6 +58,9 @@ import { CampaignsModule } from './campaigns/campaigns.module';
     DashboardModule,
     HealthModule,
     CampaignsModule,
+    BoardsModule,
+    BoardColumnsModule,
+    CardsModule,
   ],
 })
 export class AppModule {}
