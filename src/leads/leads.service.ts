@@ -12,7 +12,7 @@ export class LeadsService {
     if (!item) throw new NotFoundException('Não encontrado');
     return item;
   }
-  create(data: Partial<Lead>) { return this.repo.save(this.repo.create(data)); }
+  create(data: Partial<Lead>) { delete (data as any).id; return this.repo.save(this.repo.create(data)); }
   async update(id: string, data: Partial<Lead>) {
     await this.findOne(id);
     await this.repo.update(id, data as any);

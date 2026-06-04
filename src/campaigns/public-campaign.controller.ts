@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -16,5 +16,10 @@ export class PublicCampaignController {
   @Post(':slug/click')
   trackClick(@Param('slug') slug: string) {
     return this.service.trackClick(slug);
+  }
+
+  @Post(':slug/spin')
+  spin(@Param('slug') slug: string, @Body() body: { name: string; phone?: string; email?: string }) {
+    return this.service.spin(slug, body);
   }
 }

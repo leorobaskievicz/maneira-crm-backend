@@ -13,7 +13,7 @@ export class FinancialRecordsService {
     return this.repo.find({ order: { createdAt: 'DESC' } });
   }
 
-  create(data: any) { return this.repo.save(this.repo.create(data)); }
+  create(data: any) { delete data.id; return this.repo.save(this.repo.create(data)); }
 
   async summary(year: number, month: number) {
     const start = new Date(year, month - 1, 1);

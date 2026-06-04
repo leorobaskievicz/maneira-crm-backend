@@ -14,6 +14,7 @@ export class StockMovementsService {
   findAll() { return this.repo.find({ order: { createdAt: 'DESC' } }); }
 
   async create(data: any) {
+    delete data.id;
     const movement = this.repo.create(data);
     const saved = await this.repo.save(movement);
     // Update product quantity

@@ -27,7 +27,7 @@ export class AppointmentsService {
     return this.repo.find({ where: { patient: { id: patientId } }, order: { scheduledAt: 'DESC' } });
   }
 
-  create(data: any) { return this.repo.save(this.repo.create(data)); }
+  create(data: any) { delete data.id; return this.repo.save(this.repo.create(data)); }
 
   async update(id: string, data: any) {
     await this.findOne(id);

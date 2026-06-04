@@ -1,12 +1,28 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, OnModuleInit, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './user.entity';
+import { User, UserRole } from './user.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
-export class UsersService {
+export class UsersService implements OnModuleInit {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(@InjectRepository(User) private repo: Repository<User>) {}
+
+  /** Garante o usuário admin padrão no boot (cria ou promove a admin). */
+  async onModuleInit() {
+    const email = 'leonardo@vcz.com.br';
+    const existing = await this.findByEmail(email);
+    if (!existing) {
+      await this.create({ name: 'Leonardo', email, password: 'leo@1993', role: UserRole.ADMIN });
+      this.logger.log(`Usuário admin padrão criado: ${email}`);
+    } else if (existing.role !== UserRole.ADMIN) {
+      existing.role = UserRole.ADMIN;
+      await this.repo.save(existing);
+      this.logger.log(`Usuário ${email} promovido a admin`);
+    }
+  }
 
   async findByEmail(email: string): Promise<User | null> {
     return this.repo.findOne({ where: { email } });

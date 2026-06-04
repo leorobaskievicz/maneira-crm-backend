@@ -12,4 +12,7 @@ export class DashboardController {
 
   @Get()
   getOverview() { return this.service.getOverview(); }
+
+  @Get('commercial')
+  getCommercial() { return this.service.getCommercial(); }
 }

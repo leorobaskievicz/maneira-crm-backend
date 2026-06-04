@@ -7,7 +7,7 @@ import { BoardColumn } from './board-column.entity';
 export class BoardColumnsService {
   constructor(@InjectRepository(BoardColumn) private repo: Repository<BoardColumn>) {}
   
-  create(data: Partial<BoardColumn>) { return this.repo.save(this.repo.create(data)); }
+  create(data: Partial<BoardColumn>) { delete (data as any).id; return this.repo.save(this.repo.create(data)); }
   
   async update(id: string, data: Partial<BoardColumn>) {
     await this.repo.update(id, data as any);

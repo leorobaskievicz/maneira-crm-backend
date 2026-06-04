@@ -12,7 +12,7 @@ export class MedicalRecordsService {
     if (!r) throw new NotFoundException('Prontuário não encontrado');
     return r;
   }
-  create(data: any) { return this.repo.save(this.repo.create(data)); }
+  create(data: any) { delete data.id; return this.repo.save(this.repo.create(data)); }
   async update(id: string, data: any) {
     await this.findOne(id);
     await this.repo.update(id, data);

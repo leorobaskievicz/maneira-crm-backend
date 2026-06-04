@@ -45,7 +45,7 @@ export class BoardsService implements OnModuleInit {
     return board;
   }
   
-  create(data: Partial<Board>) { return this.repo.save(this.repo.create(data)); }
+  create(data: Partial<Board>) { delete (data as any).id; return this.repo.save(this.repo.create(data)); }
   
   async update(id: string, data: Partial<Board>) {
     await this.repo.update(id, data as any);

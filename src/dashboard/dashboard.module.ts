@@ -5,11 +5,12 @@ import { FinancialRecord } from '../financial/financial-record.entity';
 import { Patient } from '../patients/patient.entity';
 import { Product } from '../products/product.entity';
 import { Lead } from '../leads/lead.entity';
+import { Board } from '../boards/board.entity';
 import { DashboardService } from './dashboard.service';
 import { DashboardController } from './dashboard.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Appointment, FinancialRecord, Patient, Product, Lead])],
+  imports: [TypeOrmModule.forFeature([Appointment, FinancialRecord, Patient, Product, Lead, Board])],
   providers: [DashboardService],
   controllers: [DashboardController],
 })

@@ -12,7 +12,7 @@ export class ProcedureCatalogsService {
     if (!item) throw new NotFoundException('Procedimento não encontrado');
     return item;
   }
-  create(data: Partial<ProcedureCatalog>) { return this.repo.save(this.repo.create(data)); }
+  create(data: Partial<ProcedureCatalog>) { delete (data as any).id; return this.repo.save(this.repo.create(data)); }
   async update(id: string, data: Partial<ProcedureCatalog>) {
     await this.findOne(id);
     await this.repo.update(id, data as any);

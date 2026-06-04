@@ -18,7 +18,7 @@ export class PatientsService {
     return p;
   }
 
-  create(data: Partial<Patient>) { return this.repo.save(this.repo.create(data)); }
+  create(data: Partial<Patient>) { delete (data as any).id; return this.repo.save(this.repo.create(data)); }
 
   async update(id: string, data: Partial<Patient>) {
     await this.findOne(id);

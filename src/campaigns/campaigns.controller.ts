@@ -11,6 +11,7 @@ import { Campaign } from './campaign.entity';
 export class CampaignsController {
   constructor(private readonly service: CampaignsService) {}
   @Get() findAll() { return this.service.findAll(); }
+  @Get(':id/entries') entries(@Param('id') id: string) { return this.service.listEntries(id); }
   @Get(':id') findOne(@Param('id') id: string) { return this.service.findOne(id); }
   @Post() create(@Body() body: Partial<Campaign>) { return this.service.create(body); }
   @Put(':id') update(@Param('id') id: string, @Body() body: Partial<Campaign>) { return this.service.update(id, body); }

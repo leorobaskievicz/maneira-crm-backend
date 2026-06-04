@@ -12,7 +12,7 @@ export class ProductsService {
     if (!item) throw new NotFoundException('Não encontrado');
     return item;
   }
-  create(data: Partial<Product>) { return this.repo.save(this.repo.create(data)); }
+  create(data: Partial<Product>) { delete (data as any).id; return this.repo.save(this.repo.create(data)); }
   async update(id: string, data: Partial<Product>) {
     await this.findOne(id);
     await this.repo.update(id, data as any);

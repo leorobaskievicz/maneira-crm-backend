@@ -7,7 +7,7 @@ import { Card } from './card.entity';
 export class CardsService {
   constructor(@InjectRepository(Card) private repo: Repository<Card>) {}
   
-  create(data: Partial<Card>) { return this.repo.save(this.repo.create(data)); }
+  create(data: Partial<Card>) { delete (data as any).id; return this.repo.save(this.repo.create(data)); }
   
   async update(id: string, data: Partial<Card>) {
     await this.repo.update(id, data as any);

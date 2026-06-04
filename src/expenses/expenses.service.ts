@@ -12,7 +12,7 @@ export class ExpensesService {
     if (!item) throw new NotFoundException('Não encontrado');
     return item;
   }
-  create(data: Partial<Expense>) { return this.repo.save(this.repo.create(data)); }
+  create(data: Partial<Expense>) { delete (data as any).id; return this.repo.save(this.repo.create(data)); }
   async update(id: string, data: Partial<Expense>) {
     await this.findOne(id);
     await this.repo.update(id, data as any);

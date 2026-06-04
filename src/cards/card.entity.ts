@@ -28,6 +28,10 @@ export class Card {
   @Column({ nullable: true })
   source: string;
 
+  // Valor potencial do lead (R$) — usado no pipeline comercial
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  value: number;
+
   @Column({ type: 'int', default: 0 })
   order: number;
 
