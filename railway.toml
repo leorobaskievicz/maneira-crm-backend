@@ -2,7 +2,7 @@
 builder = "NIXPACKS"
 
 [variables]
-NIXPACKS_NODE_VERSION = "20"
+NIXPACKS_NODE_VERSION = "22"
 
 [deploy]
 startCommand = "node dist/main.js"
