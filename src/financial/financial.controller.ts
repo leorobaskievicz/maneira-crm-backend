@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, UseGuards } from '@nestjs/common';
 import { FinancialRecordsService } from './financial.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags, ApiQuery } from '@nestjs/swagger';
@@ -24,6 +24,9 @@ export class FinancialController {
     const now = new Date();
     return this.service.summary(+(year || now.getFullYear()), +(month || now.getMonth() + 1));
   }
+
+  @Get('patient/:id')
+  findByPatient(@Param('id') id: string) { return this.service.findByPatient(id); }
 
   @Post()
   create(@Body() body: any) { return this.service.create(body); }

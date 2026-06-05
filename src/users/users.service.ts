@@ -34,15 +34,56 @@ export class UsersService implements OnModuleInit {
     return user;
   }
 
-  async create(data: { name: string; email: string; password: string; role?: any }): Promise<User> {
+  async create(data: { name: string; email: string; password: string; role?: any; permissions?: string[]; active?: boolean }): Promise<User> {
     const exists = await this.findByEmail(data.email);
     if (exists) throw new ConflictException('Email já cadastrado');
     const hash = await bcrypt.hash(data.password, 10);
-    const user = this.repo.create({ name: data.name, email: data.email, password: hash, role: data.role });
-    return this.repo.save(user);
+    const user = this.repo.create({
+      name: data.name,
+      email: data.email,
+      password: hash,
+      role: data.role,
+      permissions: data.permissions ?? [],
+      active: data.active ?? true,
+    });
+    const saved = await this.repo.save(user);
+    return this.strip(saved);
+  }
+
+  async update(id: string, data: any): Promise<User> {
+    const user = await this.findById(id);
+    if (data.email && data.email !== user.email) {
+      const exists = await this.findByEmail(data.email);
+      if (exists) throw new ConflictException('Email já cadastrado');
+      user.email = data.email;
+    }
+    if (data.name != null) user.name = data.name;
+    if (data.role != null) user.role = data.role;
+    if (data.active != null) user.active = data.active;
+    if (data.permissions != null) user.permissions = data.permissions;
+    if (data.password) user.password = await bcrypt.hash(data.password, 10);
+    const saved = await this.repo.save(user);
+    return this.strip(saved);
+  }
+
+  async remove(id: string) {
+    const user = await this.findById(id);
+    await this.repo.remove(user);
+    return { success: true };
   }
 
   async findAll(): Promise<User[]> {
-    return this.repo.find();
+    const users = await this.repo.find({ order: { createdAt: 'ASC' } });
+    return users.map((u) => this.strip(u));
+  }
+
+  async findOneSafe(id: string): Promise<User> {
+    return this.strip(await this.findById(id));
+  }
+
+  /** Remove a senha do objeto retornado. */
+  private strip(user: User): User {
+    const { password, ...rest } = user;
+    return rest as User;
   }
 }

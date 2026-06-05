@@ -32,6 +32,10 @@ export class Card {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   value: number;
 
+  // Etiquetas livres do card
+  @Column({ type: 'simple-array', nullable: true })
+  tags: string[];
+
   @Column({ type: 'int', default: 0 })
   order: number;
 

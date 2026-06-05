@@ -40,6 +40,14 @@ export class FinancialRecord {
   @Column({ nullable: true })
   description: string;
 
+  // Itens da venda (procedimentos/produtos). amount = total da venda.
+  @Column({ type: 'json', nullable: true })
+  items: { type: 'procedure' | 'product' | 'other'; name: string; quantity: number; unitPrice: number }[];
+
+  // Valor efetivamente recebido (para vendas parciais). Se >= amount, status = paid.
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  received: number;
+
   @Column({ type: 'date', nullable: true })
   dueDate: Date;
 

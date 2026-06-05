@@ -15,6 +15,10 @@ export class FinancialRecordsService {
 
   create(data: any) { delete data.id; return this.repo.save(this.repo.create(data)); }
 
+  findByPatient(patientId: string) {
+    return this.repo.find({ where: { patient: { id: patientId } }, order: { createdAt: 'DESC' } });
+  }
+
   async summary(year: number, month: number) {
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0, 23, 59, 59);
