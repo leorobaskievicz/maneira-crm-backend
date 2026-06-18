@@ -54,6 +54,7 @@ export interface QuizConfig {
   noPrizeMessage?: string;      // (modo 'score') mensagem quando não atinge faixa
   theme?: string;
   logo?: string;            // logo da clínica — usado na arte de Stories
+  storyImage?: string;      // arte pronta que o lead posta nos Stories (obrigatória p/ resgatar o prêmio)
   backgroundImage?: string;
   secondaryColor?: string;
   backgroundColor?: string;
