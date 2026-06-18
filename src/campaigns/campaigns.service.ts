@@ -158,6 +158,26 @@ export class CampaignsService {
 
   // ---- Quiz de Perfil ----
 
+  /** Versão pública saneada do quiz: remove a resposta correta e os prêmios do payload exposto na landing. */
+  async findBySlugPublic(slug: string) {
+    const c = await this.findBySlug(slug);
+    if (c.campaignType === CampaignType.QUIZ && c.quizConfig) {
+      const qc: any = { ...c.quizConfig };
+      if (Array.isArray(qc.questions)) {
+        // remove correctIndex (não expor a resposta certa ao cliente)
+        qc.questions = qc.questions.map((q: any) => {
+          const { correctIndex, ...rest } = q;
+          void correctIndex;
+          return rest;
+        });
+      }
+      delete qc.prizeTiers; // faixas/prêmios são revelados só no resultado (resposta do submit)
+      if (Array.isArray(qc.results)) qc.results = qc.results.map((r: any) => ({ key: r.key, title: r.title }));
+      return { ...c, quizConfig: qc };
+    }
+    return c;
+  }
+
   /** Registra a resposta de um quiz: apura o resultado, define o prêmio, grava a participação e cria o lead. */
   async submitQuiz(slug: string, dto: QuizDto) {
     const campaign = await this.findBySlug(slug);
@@ -166,9 +186,12 @@ export class CampaignsService {
     }
     const cfg = campaign.quizConfig || {};
     const questions = cfg.questions || [];
-    const results = cfg.results || [];
-    if (questions.length < 1 || results.length < 1) {
-      throw new BadRequestException('Quiz sem perguntas ou resultados configurados');
+    const mode = cfg.mode === 'score' ? 'score' : 'profile';
+    if (questions.length < 1) {
+      throw new BadRequestException('Quiz sem perguntas configuradas');
+    }
+    if (mode === 'profile' && (cfg.results || []).length < 1) {
+      throw new BadRequestException('Quiz sem resultados configurados');
     }
     if (!dto.name?.trim()) {
       throw new BadRequestException('Nome é obrigatório');
@@ -180,7 +203,7 @@ export class CampaignsService {
     const phoneDigits = (dto.phone || '').replace(/\D/g, '');
     const instagram = (dto.instagram || '').replace(/^@/, '').trim() || undefined;
 
-    // Anti-duplicação: mesmo WhatsApp/email não responde de novo (retorna o resultado anterior)
+    // Anti-duplicação: mesmo WhatsApp/email não responde de novo (recalcula o resultado anterior)
     if (cfg.onePerPerson && (phoneDigits || dto.email)) {
       const existing = await this.entryRepo
         .createQueryBuilder('e')
@@ -190,14 +213,14 @@ export class CampaignsService {
           email: dto.email || '__none__',
         })
         .getOne();
-      if (existing && existing.resultKey) {
-        const prev = results.find((r) => r.key === existing.resultKey) || results[0];
-        return { result: this.publicResult(prev), repeat: true };
+      if (existing && Array.isArray(existing.answers)) {
+        const prev = this.evaluateQuiz(campaign, existing.answers);
+        return { result: prev.public, repeat: true };
       }
     }
 
-    // Apuração do resultado (perfil mais escolhido)
-    const result = this.computeQuizResult(campaign, dto.answers);
+    // Apuração do resultado (perfil ou acertos, conforme o modo)
+    const evald = this.evaluateQuiz(campaign, dto.answers);
 
     // Grava participação
     await this.entryRepo.save(this.entryRepo.create({
@@ -206,21 +229,29 @@ export class CampaignsService {
       phone: phoneDigits || undefined,
       email: dto.email || undefined,
       instagram,
-      resultKey: result.key,
-      resultLabel: result.title,
-      prizeLabel: result.prizeLabel,
+      resultKey: evald.key,
+      resultLabel: evald.resultLabel,
+      prizeLabel: evald.prizeLabel || undefined,
       answers: dto.answers,
     }));
     await this.repo.increment({ id: campaign.id }, 'clicks', 1);
 
     // Cria lead no funil (board "Leads", primeira coluna)
-    await this.createQuizLeadCard(campaign, dto, result, phoneDigits, instagram);
+    await this.createQuizLeadCard(campaign, dto, evald, phoneDigits, instagram);
 
-    return { result: this.publicResult(result), repeat: false };
+    return { result: evald.public, repeat: false };
   }
 
-  /** Apura o resultado do quiz: cada resposta soma 1 ponto ao resultado que ela favorece; o mais votado vence. */
-  private computeQuizResult(campaign: Campaign, answers: number[]): QuizResult {
+  /** Apura o quiz no modo configurado e devolve dados internos + payload público. */
+  private evaluateQuiz(campaign: Campaign, answers: number[]) {
+    const cfg = campaign.quizConfig || {};
+    return cfg.mode === 'score'
+      ? this.evaluateScore(campaign, answers)
+      : this.evaluateProfile(campaign, answers);
+  }
+
+  /** Modo 'profile': cada resposta soma 1 ponto ao resultado que ela favorece; o mais votado vence. */
+  private evaluateProfile(campaign: Campaign, answers: number[]) {
     const cfg = campaign.quizConfig || {};
     const questions = cfg.questions || [];
     const results = cfg.results || [];
@@ -228,36 +259,69 @@ export class CampaignsService {
     results.forEach((r) => (tally[r.key] = 0));
 
     questions.forEach((q, qi) => {
-      const choice = answers[qi];
-      const opt = q.options?.[choice];
-      if (opt && opt.resultKey && tally[opt.resultKey] !== undefined) {
-        tally[opt.resultKey] += 1;
-      }
+      const opt = q.options?.[answers[qi]];
+      if (opt && opt.resultKey && tally[opt.resultKey] !== undefined) tally[opt.resultKey] += 1;
     });
 
     // Vencedor = maior pontuação; empate resolve pela ordem dos resultados configurados.
-    let best = results[0];
+    let best: QuizResult = results[0];
     let bestScore = -1;
     for (const r of results) {
       if (tally[r.key] > bestScore) { bestScore = tally[r.key]; best = r; }
     }
-    return best;
-  }
-
-  /** Versão pública/segura do resultado (sem dados internos). */
-  private publicResult(r: QuizResult) {
     return {
-      key: r.key,
-      title: r.title,
-      description: r.description,
-      prizeLabel: r.prizeLabel,
-      prizeDescription: r.prizeDescription,
-      image: r.image,
-      emoji: r.emoji,
+      key: best.key,
+      resultLabel: best.title,
+      prizeLabel: best.prizeLabel,
+      leadInfo: `Perfil: ${best.title} • Prêmio: ${best.prizeLabel}`,
+      public: {
+        mode: 'profile' as const,
+        key: best.key, title: best.title, description: best.description,
+        prizeLabel: best.prizeLabel, prizeDescription: best.prizeDescription,
+        image: best.image, emoji: best.emoji, hasPrize: true,
+      },
     };
   }
 
-  private async createQuizLeadCard(campaign: Campaign, dto: QuizDto, result: QuizResult, phoneDigits: string, instagram?: string) {
+  /** Modo 'score': conta acertos e escolhe a faixa de prêmio (maior minCorrect ≤ acertos). */
+  private evaluateScore(campaign: Campaign, answers: number[]) {
+    const cfg = campaign.quizConfig || {};
+    const questions = cfg.questions || [];
+    const total = questions.length;
+    let correct = 0;
+    questions.forEach((q, qi) => {
+      if (typeof q.correctIndex === 'number' && answers[qi] === q.correctIndex) correct += 1;
+    });
+
+    const tiers = [...(cfg.prizeTiers || [])].sort((a, b) => a.minCorrect - b.minCorrect);
+    let tier: typeof tiers[number] | null = null;
+    for (const t of tiers) { if (correct >= t.minCorrect) tier = t; }
+    const hasPrize = !!tier;
+
+    return {
+      key: String(correct),
+      resultLabel: `${correct}/${total} acertos`,
+      prizeLabel: tier?.label || '',
+      leadInfo: `Acertos: ${correct}/${total}${hasPrize ? ` • Prêmio: ${tier!.label}` : ' • Sem prêmio'}`,
+      public: {
+        mode: 'score' as const,
+        correct, total, hasPrize,
+        prizeLabel: tier?.label || '',
+        prizeDescription: tier?.description,
+        emoji: tier?.emoji || (hasPrize ? '🎉' : '😅'),
+        noPrizeTitle: cfg.noPrizeTitle,
+        noPrizeMessage: cfg.noPrizeMessage,
+      },
+    };
+  }
+
+  private async createQuizLeadCard(
+    campaign: Campaign,
+    dto: QuizDto,
+    evald: { leadInfo: string },
+    phoneDigits: string,
+    instagram?: string,
+  ) {
     try {
       const board = await this.boardRepo.findOne({
         where: { name: 'Leads' },
@@ -272,7 +336,7 @@ export class CampaignsService {
         phone: phoneDigits || undefined,
         email: dto.email || undefined,
         source: 'quiz',
-        description: `🧩 Quiz "${campaign.title}" • Perfil: ${result.title} • Prêmio: ${result.prizeLabel}${igLine}`,
+        description: `🧩 Quiz "${campaign.title}" • ${evald.leadInfo}${igLine}`,
         column: { id: firstColumn.id } as any,
         order: count,
       }));

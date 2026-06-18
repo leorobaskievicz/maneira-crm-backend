@@ -21,7 +21,7 @@ export class PublicCampaignController {
   @Get(':slug')
   async getBySlug(@Param('slug') slug: string) {
     await this.service.trackView(slug);
-    return this.service.findBySlug(slug);
+    return this.service.findBySlugPublic(slug);
   }
 
   @Post(':slug/click')

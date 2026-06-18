@@ -29,6 +29,14 @@ export interface QuizQuestion {
   text: string;
   image?: string;       // imagem opcional ilustrando a pergunta
   options: QuizOption[];
+  correctIndex?: number; // (modo 'score') índice da opção correta
+}
+/** (modo 'score') Faixa de prêmio por número de acertos. */
+export interface QuizPrizeTier {
+  minCorrect: number;   // acertos mínimos para esta faixa
+  label: string;        // prêmio (ex: "15% OFF")
+  description?: string;
+  emoji?: string;
 }
 export interface QuizResult {
   key: string;              // identificador estável (ex: "pele-madura")
@@ -40,6 +48,10 @@ export interface QuizResult {
   emoji?: string;           // emoji decorativo do resultado
 }
 export interface QuizConfig {
+  mode?: 'profile' | 'score'; // 'profile' = perfil mais escolhido | 'score' = prêmio por nº de acertos
+  prizeTiers?: QuizPrizeTier[]; // (modo 'score') faixas de prêmio por acertos
+  noPrizeTitle?: string;        // (modo 'score') título quando não atinge faixa
+  noPrizeMessage?: string;      // (modo 'score') mensagem quando não atinge faixa
   theme?: string;
   logo?: string;            // logo da clínica — usado na arte de Stories
   backgroundImage?: string;
